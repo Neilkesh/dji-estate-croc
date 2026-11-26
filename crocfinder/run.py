@@ -39,9 +39,16 @@ def source_of(a) -> tuple[Source, tuple[int, ...]]:
             tuple(int(s) for s in a.streams.split(",")))
 
 
-def to_tiles(frame: np.ndarray, grids: torch.Tensor) -> torch.Tensor:
-    f = torch.from_numpy(frame).to(grids.device).permute(2, 0, 1).float()
-    return reproject(f, grids).clamp(0, 255).byte()        # (n,3,S,S)
+def to_tiles(frame: np.ndarray, grids: torch.Tensor, stretch: bool = True) -> torch.Tensor:
+    f = torch.from_numpy(frame.copy()).to(grids.device).permute(2, 0, 1).float()
+    t = reproject(f, grids)                                 # (n,3,S,S)
+    if stretch:
+        # footage is a flat log profile: stretch contrast using the middle of the frame
+        h, w = frame.shape[:2]
+        mid = f[:, h // 4:3 * h // 4:16, w // 4:3 * w // 4:16].mean(0).flatten()
+        lo, hi = torch.quantile(mid, 0.01), torch.quantile(mid, 0.995)
+        t = (t - lo) * (255.0 / max(float(hi - lo), 32.0))
+    return t.clamp(0, 255).byte()
 
 
 def pil(t: torch.Tensor) -> Image.Image:
@@ -80,6 +87,8 @@ def scan_pass(a, det, tiles, grids, src_streams, fps, windows, crops_dir, tag) -
             for i in range(0, len(imgs), a.batch):
                 for k, boxes in enumerate(det(imgs[i:i + a.batch]), start=i):
                     for j, b in enumerate(boxes):
+                        if (b.x1 - b.x0) * (b.y1 - b.y0) > a.max_box_frac * imgs[k].width * imgs[k].height:
+                            continue      # a box covering most of the tile is the lake, not an animal
                         cx, cy = (b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2
                         yaw, pitch = pixel_direction(tiles[k], cx, cy)
                         name = f"{tag}_{t:09.2f}_{k:02d}_{j}"
@@ -192,6 +201,7 @@ def main() -> None:
     p.add_argument("--dense-text", type=float, default=0.5)
     p.add_argument("--dense-det", type=float, default=0.3)
     p.add_argument("--no-dense", action="store_true")
+    p.add_argument("--max-box-frac", type=float, default=0.35)
     p.add_argument("--max-report", type=int, default=500)
     add_source_args(p); p.set_defaults(fn=cmd_scan)
     a = ap.parse_args()

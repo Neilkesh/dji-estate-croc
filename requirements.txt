@@ -6,3 +6,5 @@ transformers>=4.50
 google-cloud-storage
 static-ffmpeg
 pytest
+sentencepiece
+protobuf

@@ -7,7 +7,7 @@ import torch
 from PIL import Image
 
 PROMPTS = ["a crocodile", "an alligator", "a baby crocodile", "a crocodile head in water",
-           "a large lizard"]
+           "a monitor lizard"]
 
 MODELS = {
     "owlv2": "google/owlv2-base-patch16-ensemble",
