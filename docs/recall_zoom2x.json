@@ -1,0 +1,44 @@
+{
+  "24": {
+    "found": 0,
+    "of": 48,
+    "recall": 0.0,
+    "median_score": null
+  },
+  "32": {
+    "found": 1,
+    "of": 48,
+    "recall": 0.02,
+    "median_score": 0.13
+  },
+  "48": {
+    "found": 9,
+    "of": 48,
+    "recall": 0.19,
+    "median_score": 0.16
+  },
+  "64": {
+    "found": 14,
+    "of": 48,
+    "recall": 0.29,
+    "median_score": 0.15
+  },
+  "96": {
+    "found": 8,
+    "of": 48,
+    "recall": 0.17,
+    "median_score": 0.22
+  },
+  "128": {
+    "found": 14,
+    "of": 48,
+    "recall": 0.29,
+    "median_score": 0.18
+  },
+  "192": {
+    "found": 20,
+    "of": 48,
+    "recall": 0.42,
+    "median_score": 0.25
+  }
+}

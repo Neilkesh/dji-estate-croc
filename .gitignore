@@ -20,3 +20,5 @@ __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
+# review images and write-ups are the exception
+!docs/images/*.jpg

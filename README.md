@@ -30,7 +30,8 @@ python -m crocfinder.run scan  VIDEO.OSV --out out/VIDEO --refs refs/
 pytest
 ```
 
-Videos, frames and results are never committed. Bucket and project names live in an
+Videos, frames and full results are never committed; a small set of review images lives in
+`docs/images/`. The use case and the findings of the first run are in [docs/USECASE.md](docs/USECASE.md). Bucket and project names live in an
 untracked `.env` (see `.env.example`).
 
 ## Limits
