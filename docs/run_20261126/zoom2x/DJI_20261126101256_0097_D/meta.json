@@ -1,0 +1,12 @@
+{
+  "duration_s": 110,
+  "sparse_fps": 2.0,
+  "model": "google/owlv2-base-patch16-ensemble",
+  "sparse_frames": 220,
+  "sparse_seconds": 531.5,
+  "dense_frames": 0,
+  "dense_seconds": 0,
+  "tiles_per_frame": 63,
+  "reference_photos": 1,
+  "total_candidates": 555
+}

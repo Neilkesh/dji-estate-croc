@@ -68,8 +68,21 @@ size, and the detector was asked to find it (`crocfinder/synth.py`; raw numbers 
 Even a large, clearly visible crocodile is found only about half the time in a single frame.
 A clean gallery from this run is weak evidence that no crocodile is present.
 
+## What was kept
+
+After the run the rented GPU machine and the cloud copies of the videos, crops and galleries
+were deleted. Kept in this repository:
+
+- `run_20261126/<pass>/<video>/candidates.csv` and `meta.json`: every ranked candidate with its
+  timecode, viewing direction and scores, for all 14 runs. The crop images they name are gone.
+- `images/`: the two close-ups and 12 contact sheets.
+- `recall_base.json`, `recall_zoom2x.json`: the recall check.
+
+Re-running needs the original `.OSV` files uploaded again and a GPU machine; see
+`scripts/queue.sh`.
+
 ## Open work
 
 - Watch the three moments above in the original footage.
-- Look through the galleries not yet reviewed.
+- The galleries not yet reviewed were deleted with the cloud copy; reviewing them means re-running those videos.
 - Raise recall: try a stronger detector, and turn the dense pass back on.
