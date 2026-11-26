@@ -41,6 +41,49 @@ class Detector:
         self.model = AutoModelForZeroShotObjectDetection.from_pretrained(
             self.name, torch_dtype=dtype).to(self.device).eval()
         self.dtype = dtype
+        self._text = None
+
+    @torch.inference_mode()
+    def tiles(self, t: torch.Tensor) -> list[list[Box]]:
+        """Square uint8 tiles (n,3,S,S) already on the model's device -> boxes.
+
+        Same result as __call__, but resizing and normalising happen on the GPU.
+        The stock image processor does this on the CPU and is by far the slowest step.
+        """
+        if self.grounding:
+            from PIL import Image as _I
+            return self([_I.fromarray(x.permute(1, 2, 0).cpu().numpy()) for x in t])
+        ip = self.proc.image_processor
+        side = ip.size["height"]
+        x = t.float() / 255.0
+        if x.shape[-1] != side:
+            x = torch.nn.functional.interpolate(x, size=(side, side), mode="bilinear",
+                                                antialias=True, align_corners=False)
+        mean = torch.tensor(ip.image_mean, device=x.device).view(1, 3, 1, 1)
+        std = torch.tensor(ip.image_std, device=x.device).view(1, 3, 1, 1)
+        x = ((x - mean) / std).to(self.dtype)
+        if self._text is None:
+            tok = self.proc(text=[self.prompts], return_tensors="pt", padding=True)
+            self._text = {k: v.to(self.device) for k, v in tok.items()}
+        n = x.shape[0]
+        text = {k: v.repeat(n, 1) for k, v in self._text.items()}
+        out = self.model(pixel_values=x, **text)
+        S = t.shape[-1]
+        res = self.proc.post_process_grounded_object_detection(
+            out, threshold=self.threshold, target_sizes=[(S, S)] * n, text_labels=[self.prompts] * n)
+        return [self._boxes(r, S, S) for r in res]
+
+    def _boxes(self, r: dict, h: int, w: int) -> list[Box]:
+        labels = r.get("text_labels", r.get("labels"))
+        per = []
+        for b, s, l in zip(r["boxes"].float().tolist(), r["scores"].float().tolist(), labels):
+            x0, y0, x1, y1 = b
+            x0, x1 = max(0.0, x0), min(float(w), x1)
+            y0, y1 = max(0.0, y0), min(float(h), y1)
+            if x1 - x0 < 2 or y1 - y0 < 2:
+                continue
+            per.append(Box(x0, y0, x1, y1, s, l if isinstance(l, str) else str(l)))
+        return nms(per)
 
     @torch.inference_mode()
     def __call__(self, images: list[Image.Image]) -> list[list[Box]]:
@@ -64,19 +107,7 @@ class Detector:
             sq = [(max(s), max(s)) for s in sizes]
             res = self.proc.post_process_grounded_object_detection(
                 out, threshold=self.threshold, target_sizes=sq, text_labels=text)
-        boxes = []
-        for r, (h, w) in zip(res, sizes):
-            labels = r.get("text_labels", r.get("labels"))
-            per = []
-            for b, s, l in zip(r["boxes"].float().tolist(), r["scores"].float().tolist(), labels):
-                x0, y0, x1, y1 = b
-                x0, x1 = max(0.0, x0), min(float(w), x1)
-                y0, y1 = max(0.0, y0), min(float(h), y1)
-                if x1 - x0 < 2 or y1 - y0 < 2:
-                    continue
-                per.append(Box(x0, y0, x1, y1, s, l if isinstance(l, str) else str(l)))
-            boxes.append(nms(per))
-        return boxes
+        return [self._boxes(r, h, w) for r, (h, w) in zip(res, sizes)]
 
 
 def iou(a: Box, b: Box) -> float:

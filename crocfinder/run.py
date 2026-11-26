@@ -83,9 +83,11 @@ def scan_pass(a, det, tiles, grids, src_streams, fps, windows, crops_dir, tag) -
                                       hwaccel=a.hwaccel):
             n_frames += 1
             tt = to_tiles(frame, grids)
-            imgs = [pil(x) for x in tt]
-            for i in range(0, len(imgs), a.batch):
-                for k, boxes in enumerate(det(imgs[i:i + a.batch]), start=i):
+            imgs: dict[int, Image.Image] = {}
+            for i in range(0, len(tt), a.batch):
+                for k, boxes in enumerate(det.tiles(tt[i:i + a.batch]), start=i):
+                    if boxes:
+                        imgs[k] = pil(tt[k])
                     for j, b in enumerate(boxes):
                         if (b.x1 - b.x0) * (b.y1 - b.y0) > a.max_box_frac * imgs[k].width * imgs[k].height:
                             continue      # a box covering most of the tile is the lake, not an animal
