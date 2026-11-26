@@ -1,0 +1,22 @@
+# data never goes in git: videos, frames, crops, results
+*.OSV
+*.osv
+*.mp4
+*.MP4
+*.insv
+*.jpg
+*.jpeg
+*.png
+data/
+out/
+results/
+weights/
+*.pt
+*.safetensors
+# local config and secrets
+.env
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
